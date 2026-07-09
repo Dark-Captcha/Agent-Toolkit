@@ -220,13 +220,15 @@ fi
 
 # --- Build each row's text first, so the card can be sized to fit them ---
 
-# Context: exact tokens, never derived from the percentage.
-if [ -n "$used_pct" ] && [ -n "$context_size" ]; then
+# Context: prefer the exact token count; if that field is absent (older Claude
+# Code) derive it from the percentage as a fallback so the count is never blank.
+if [[ "$used_pct" =~ ^[0-9.]+$ ]] && [[ "$context_size" =~ ^[0-9]+$ ]]; then
     printf -v used_int '%.0f' "$used_pct" 2>/dev/null || used_int=0
     _pct_color "$used_int"
     ctx_pct_color="$_c"
     _build_bar "$used_int" 12 "$CYAN"
     ctx_bar="$_bar"
+    [[ "$used_tokens" =~ ^[0-9]+$ ]] || used_tokens=$((used_int * context_size / 100))
     _format_tokens "$used_tokens"
     used_fmt="$_fmt"
     _format_tokens "$context_size"
