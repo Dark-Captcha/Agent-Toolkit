@@ -164,24 +164,40 @@ _visible_len() {
     _vlen=${#clean}
 }
 
-# --- Effort styling: low / medium / high / xhigh / max (Ultracode reports as xhigh) ---
+# --- Effort styling. Levels differ by model: Opus 4.8/4.7, Sonnet 5, and Fable 5
+# expose low/medium/high/xhigh/max; Opus 4.6 / Sonnet 4.6 top out at max (no
+# xhigh); Sonnet 4.5 / Haiku 4.5 have no effort at all (field absent). The JSON
+# reports the live value, so we colour the known ones and show any other
+# non-empty value (e.g. "auto") verbatim rather than hiding it. "ultracode" is
+# not a distinct level — it reports as xhigh — but is handled if it appears. ---
 case "$effort" in
     max) effort_styled="${BOLD}${RED}max${RST}" ;;
+    ultracode) effort_styled="${BOLD}${RED}ultracode${RST}" ;;
     xhigh) effort_styled="${BOLD}${MAGENTA}xhigh${RST}" ;;
     high) effort_styled="${ORANGE}high${RST}" ;;
     medium) effort_styled="${BOLD}${YELLOW}medium${RST}" ;;
     low) effort_styled="${BOLD}${GREEN}low${RST}" ;;
-    *)
-        effort=""
-        effort_styled=""
-        ;; # model has no effort parameter
+    auto) effort_styled="${BOLD}${CYAN}auto${RST}" ;;
+    "") effort_styled="" ;;                             # model has no effort parameter
+    *) effort_styled="${BOLD}${CYAN}${effort}${RST}" ;; # unknown/future level — show it, don't hide
 esac
 
 # --- Plan badge: the live subscription tier from Claude Code's own account
 # record, so it reflects the active plan (Stripe subscription, not AWS/API)
 # with no guessing and self-corrects on a plan change. Cached with a short TTL
-# because the tier almost never changes but the account file churns constantly. ---
-tier_cache="/tmp/claude_statusline_tier_${UID}"
+# because the tier almost never changes but the account file churns constantly.
+#
+# The account file lives in the running instance's config dir: CLAUDE_CONFIG_DIR
+# (set e.g. by a `claude1` alias for a second account) moves it under that dir,
+# while the default instance keeps it at ~/.claude.json. Read the wrong one and
+# a Max 5x session shows Max 20x — so resolve it per instance and key the cache
+# to it, or two parallel instances would clobber each other's cached tier. ---
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -f "$CLAUDE_CONFIG_DIR/.claude.json" ]; then
+    acct="$CLAUDE_CONFIG_DIR/.claude.json"
+else
+    acct="$HOME/.claude.json"
+fi
+tier_cache="/tmp/claude_statusline_tier_${UID}_${acct//\//_}"
 status_text=""
 if [ -f "$tier_cache" ]; then
     cache_mtime=$(stat -c %Y "$tier_cache" 2>/dev/null || echo 0)
@@ -189,7 +205,7 @@ if [ -f "$tier_cache" ]; then
 fi
 if [ -z "$status_text" ]; then
     tier=$(jq -r '.oauthAccount.organizationRateLimitTier
-                  // .oauthAccount.userRateLimitTier // ""' "$HOME/.claude.json" 2>/dev/null)
+                  // .oauthAccount.userRateLimitTier // ""' "$acct" 2>/dev/null)
     case "$tier" in
         *max_20x*) status_text="Max 20x" ;;
         *max_5x*) status_text="Max 5x" ;;
