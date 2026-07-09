@@ -46,7 +46,7 @@ The repository falls into three layers, sorted by how a reader reaches for them.
 
 **The wiring — everything tool-specific.**
 
-- `setup/<tool>/` — how to connect the toolkit to one coding tool, one folder per tool. `setup/claude-code/` holds Claude Code's bootstrap, its agents, and its skills.
+- `setup/<tool>/` — how to connect the toolkit to one coding tool, one folder per tool. `setup/claude-code/` holds Claude Code's bootstrap, its agents, its skills, and a status line.
 
 Every fact lives in exactly one file; everywhere else points to it with a link.
 A copy drifts in silence; a link stays honest.
@@ -86,11 +86,15 @@ cp -n <toolkit>/setup/claude-code/CLAUDE.example.md ~/.claude/CLAUDE.md
 ln -sfn <toolkit>/setup/claude-code/agents/*.md ~/.claude/agents/
 ln -sfn <toolkit>/setup/claude-code/skills/reverse-engineering ~/.claude/skills/
 cp -n <toolkit>/setup/claude-code/settings.example.json ~/.claude/settings.json
+
+# a status line — context (exact tokens), cost, plan tier, and rate-limit windows (needs jq)
+cp -n <toolkit>/setup/claude-code/statusline-command.example.sh ~/.claude/statusline-command.sh
+chmod +x ~/.claude/statusline-command.sh
 ```
 
 Then fill in the path: in the two copied files — `~/.claude/CLAUDE.md` and `~/.claude/settings.json` — replace every `/ABSOLUTE/PATH/TO/Agent-Toolkit` with the clone path, in an editor or with the installing agent's own file-editing tool (not a blind `sed -i`, which this toolkit's rules discourage).
 
-If `~/.claude/CLAUDE.md` or `~/.claude/settings.json` already exists, `cp -n` leaves it untouched — **merge by hand** rather than overwrite: add the "read `AGENTS.md`" line to the CLAUDE.md, and the `permissions.ask` array plus the `hooks.SessionStart` entry to the settings.json. (The toolkit's own "look before you destroy" rule applies to a config file too.)
+If `~/.claude/CLAUDE.md` or `~/.claude/settings.json` already exists, `cp -n` leaves it untouched — **merge by hand** rather than overwrite: add the "read `AGENTS.md`" line to the CLAUDE.md, and the `permissions.ask` array, the `hooks.SessionStart` entry, and the `statusLine` key to the settings.json. (The toolkit's own "look before you destroy" rule applies to a config file too.)
 
 What the enforcement actually buys: an `Edit` or `Write` to a known configuration file now prompts for approval, and `CORE.md` is injected at the start of every session and after a compaction — no read to skip. It is a strong backstop, not a wall: an in-place `sed -i` is gated too, but a configuration change written through some other `Bash` path — a heredoc, a `tee` — can still slip past, and the ask-list covers common configuration files, not every conceivable one.
 
@@ -114,6 +118,9 @@ head -1 <toolkit>/CORE.md            # -> "# The Core"
 
 # the settings file is valid JSON
 python3 -m json.tool ~/.claude/settings.json > /dev/null && echo "settings OK"
+
+# the status line runs (needs jq) and prints a box
+echo '{"model":{"display_name":"Opus"}}' | ~/.claude/statusline-command.sh
 ```
 
 Then start a **new** Claude Code session — agents, skills, and hooks load at session start, not mid-session — and check three things:
