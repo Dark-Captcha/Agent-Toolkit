@@ -14,17 +14,21 @@
     ln -sfn /ABSOLUTE/PATH/TO/Agent-Toolkit/setup/claude-code/agents/*.md               ~/.claude/agents/
     ln -sfn /ABSOLUTE/PATH/TO/Agent-Toolkit/setup/claude-code/skills/reverse-engineering  ~/.claude/skills/
 
-  Enforcement (a prompt before a known configuration-file edit, and CORE.md injected each
-  session) — copy the settings, or merge its keys into an existing settings.json:
+  Enforcement (a prompt before a known configuration-file edit) — copy the
+  settings, or merge its keys into an existing settings.json:
 
     cp -n /ABSOLUTE/PATH/TO/Agent-Toolkit/setup/claude-code/settings.example.json  ~/.claude/settings.json
-    (then set the cat path inside it to /ABSOLUTE/PATH/TO/Agent-Toolkit/CORE.md)
 
   The full walkthrough, the copy fallback for Windows, and a "check it worked"
   list live in the repository README.
 -->
 
+@/ABSOLUTE/PATH/TO/Agent-Toolkit/CORE.md
+
+The `@` line above imports `CORE.md` — the constitution, always in force — whole into context at the start of every session.
+It is an import rather than a SessionStart hook because Claude Code truncates hook output at ten kilobytes, silently, while an import always loads in full.
+
 **Before the first response of every session, read `/ABSOLUTE/PATH/TO/Agent-Toolkit/AGENTS.md`.**
 
-That file is the entry point: it directs the load of `CORE.md` — the constitution, always in force — and maps out what else to read for the task at hand.
-The clone path above is the only place the local path lives; everything else is found relative to it, so `git pull` keeps the toolkit current without touching this file.
+That file is the entry point: it maps out what to read for the task at hand.
+The clone path on the lines above is the only place the local path lives; everything else is found relative to it, so `git pull` keeps the toolkit current without touching this file.

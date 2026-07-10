@@ -17,7 +17,7 @@ A small set of rules that give AI coding agents judgment instead of a checklist 
 
 **To operate under this toolkit,** load [`AGENTS.md`](AGENTS.md) — the map — and [`CORE.md`](CORE.md) — the law — before the first response, then pull a `thinking/`, `standards/`, or `reference/` file only when the task at hand touches its area, never all of them at once.
 
-**To install it for someone,** follow [Get started](#get-started) below. The clone path is filled in twice — the `<toolkit>` token in the commands, and the `/ABSOLUTE/PATH/TO/Agent-Toolkit` placeholder inside the two copied files. If the path is unknown, ask the user where the repository should live, and never overwrite an existing `~/.claude` file without confirming first.
+**To install it for someone,** follow [Get started](#get-started) below. The clone path is filled in twice — the `<toolkit>` token in the commands, and the `/ABSOLUTE/PATH/TO/Agent-Toolkit` placeholder inside the copied `~/.claude/CLAUDE.md`. If the path is unknown, ask the user where the repository should live, and never overwrite an existing `~/.claude` file without confirming first.
 
 ## Why it exists
 
@@ -81,7 +81,7 @@ git clone https://github.com/Dark-Captcha/Agent-Toolkit.git
 ```bash
 mkdir -p ~/.claude ~/.claude/agents ~/.claude/skills
 
-# bootstrap, agents, the skill, and the enforcement settings
+# bootstrap (imports CORE.md), agents, the skill, and the enforcement settings
 cp -n <toolkit>/setup/claude-code/CLAUDE.example.md ~/.claude/CLAUDE.md
 ln -sfn <toolkit>/setup/claude-code/agents/*.md ~/.claude/agents/
 ln -sfn <toolkit>/setup/claude-code/skills/reverse-engineering ~/.claude/skills/
@@ -89,14 +89,13 @@ cp -n <toolkit>/setup/claude-code/settings.example.json ~/.claude/settings.json
 
 # a status line — context (exact tokens), cost, plan tier, and rate-limit windows (needs jq)
 cp -n <toolkit>/setup/claude-code/statusline-command.example.sh ~/.claude/statusline-command.sh
-chmod +x ~/.claude/statusline-command.sh
 ```
 
-Then fill in the path: in the two copied files — `~/.claude/CLAUDE.md` and `~/.claude/settings.json` — replace every `/ABSOLUTE/PATH/TO/Agent-Toolkit` with the clone path, in an editor or with the installing agent's own file-editing tool (not a blind `sed -i`, which this toolkit's rules discourage).
+Then fill in the path: in the copied `~/.claude/CLAUDE.md`, replace every `/ABSOLUTE/PATH/TO/Agent-Toolkit` with the clone path — it appears on the `@…/CORE.md` import line and the "read `AGENTS.md`" line — in an editor or with the installing agent's own file-editing tool (not a blind `sed -i`, which this toolkit's rules discourage).
 
-If `~/.claude/CLAUDE.md` or `~/.claude/settings.json` already exists, `cp -n` leaves it untouched — **merge by hand** rather than overwrite: add the "read `AGENTS.md`" line to the CLAUDE.md, and the `permissions.ask` array, the `hooks.SessionStart` entry, and the `statusLine` key to the settings.json. (The toolkit's own "look before you destroy" rule applies to a config file too.)
+If `~/.claude/CLAUDE.md` or `~/.claude/settings.json` already exists, `cp -n` leaves it untouched — **merge by hand** rather than overwrite: add the `@…/CORE.md` import line and the "read `AGENTS.md`" line to the CLAUDE.md, and the `permissions.ask` array and the `statusLine` key to the settings.json. (The toolkit's own "look before you destroy" rule applies to a config file too.)
 
-What the enforcement actually buys: an `Edit` or `Write` to a known configuration file now prompts for approval, and `CORE.md` is injected at the start of every session and after a compaction — no read to skip. It is a strong backstop, not a wall: an in-place `sed -i` is gated too, but a configuration change written through some other `Bash` path — a heredoc, a `tee` — can still slip past, and the ask-list covers common configuration files, not every conceivable one.
+What the enforcement actually buys: an `Edit` or `Write` to a known configuration file now prompts for approval, and the `@` import in CLAUDE.md carries `CORE.md` into context whole at every session start — an import loads in full, where a SessionStart hook's output is silently truncated at ten kilobytes — no read to skip. It is a strong backstop, not a wall: an in-place `sed -i` is gated too, but a configuration change written through some other `Bash` path — a heredoc, a `tee` — can still slip past, and the ask-list covers common configuration files, not every conceivable one.
 
 **Windows, or anywhere symlinks are awkward:** copy the folders instead of linking. But a copied `agents/` or `skills/` folder loses the `../../../thinking/*.md` cross-references the agents depend on, so copy `thinking/`, `standards/`, and `reference/` next to them — or keep the full clone in place and copy only the leaf folders' contents beside it. Re-copy after each `git pull`.
 
@@ -113,14 +112,14 @@ grep -R ABSOLUTE ~/.claude/CLAUDE.md ~/.claude/settings.json || echo "clean"
 # the agents and skill resolve — not nested, not dangling
 ls ~/.claude/agents/bug-hunter.md ~/.claude/skills/reverse-engineering/SKILL.md
 
-# the injected file is real and prints its title
+# the imported file is real and prints its title
 head -1 <toolkit>/CORE.md            # -> "# The Core"
 
 # the settings file is valid JSON
 python3 -m json.tool ~/.claude/settings.json > /dev/null && echo "settings OK"
 
 # the status line runs (needs jq) and prints a box
-echo '{"model":{"display_name":"Opus"}}' | ~/.claude/statusline-command.sh
+echo '{"model":{"display_name":"Opus"}}' | bash ~/.claude/statusline-command.sh
 ```
 
 Then start a **new** Claude Code session — agents, skills, and hooks load at session start, not mid-session — and check three things:

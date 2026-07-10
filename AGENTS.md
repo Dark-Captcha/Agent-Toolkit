@@ -6,7 +6,7 @@ It does one job: point to the law, then map out what to read for the task at han
 ## Start here
 
 [`CORE.md`](CORE.md) — the constitution — is in force every session.
-The Claude Code setup injects it at the start of every session and after each compaction, so it is already in context there; read it from disk only when it is not.
+The Claude Code setup imports it whole through the `@` line in `~/.claude/CLAUDE.md`, so it is already in context there; read it from disk only when it is not.
 Everything else is loaded only when a task calls for it.
 
 ## The load map

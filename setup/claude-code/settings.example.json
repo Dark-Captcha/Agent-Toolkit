@@ -1,7 +1,7 @@
 {
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/statusline-command.sh"
+    "command": "bash ~/.claude/statusline-command.sh"
   },
   "permissions": {
     "ask": [
@@ -83,20 +83,6 @@
       "Write(**/.env.*)",
       "Bash(sed -i:*)",
       "Bash(sed --in-place:*)"
-    ]
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup|resume|clear|compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cat /ABSOLUTE/PATH/TO/Agent-Toolkit/CORE.md",
-            "timeout": 10
-          }
-        ]
-      }
     ]
   }
 }
