@@ -4,17 +4,16 @@
 #
 #   1. cp -n <toolkit>/setup/claude-code/statusline-command.example.sh \
 #           ~/.claude/statusline-command.sh
-#   2. chmod +x ~/.claude/statusline-command.sh
-#   3. Add this block to ~/.claude/settings.json (merge, do not clobber):
+#   2. Add this block to ~/.claude/settings.json (merge, do not clobber):
 #
 #        "statusLine": {
 #          "type": "command",
-#          "command": "~/.claude/statusline-command.sh"
+#          "command": "bash ~/.claude/statusline-command.sh"
 #        }
 #
 #   Requires: jq, and a terminal with UTF-8 + box-drawing glyphs (the ⟳ reset
 #   marker renders best in a Nerd Font). Nothing else — no network, no state
-#   beyond one tiny TTL cache file in /tmp.
+#   beyond one tiny TTL cache file in the user's runtime directory.
 #
 #   Delete this SETUP block from the live copy once installed.
 # -----------------------------------------------------------------------------
@@ -197,10 +196,14 @@ if [ -n "${CLAUDE_CONFIG_DIR:-}" ] && [ -f "$CLAUDE_CONFIG_DIR/.claude.json" ]; 
 else
     acct="$HOME/.claude.json"
 fi
-tier_cache="/tmp/claude_statusline_tier_${UID}_${acct//\//_}"
+# The cache lives in XDG_RUNTIME_DIR where it exists — a per-user 0700 directory,
+# so no other local user can pre-plant a symlink or feed the badge text — and
+# falls back to /tmp only where that standard is absent (e.g. macOS).
+tier_cache="${XDG_RUNTIME_DIR:-/tmp}/claude_statusline_tier_${UID}_${acct//\//_}"
 status_text=""
 if [ -f "$tier_cache" ]; then
-    cache_mtime=$(stat -c %Y "$tier_cache" 2>/dev/null || echo 0)
+    # GNU stat first, BSD stat second, so the TTL survives on macOS too.
+    cache_mtime=$(stat -c %Y "$tier_cache" 2>/dev/null || stat -f %m "$tier_cache" 2>/dev/null || echo 0)
     [ $((NOW - cache_mtime)) -lt 300 ] && IFS= read -r status_text <"$tier_cache"
 fi
 if [ -z "$status_text" ]; then
@@ -290,7 +293,10 @@ else
     header_extra=$((${#model} + ${#status_text} + 4))
 fi
 
-inner_w=$header_extra
+# Seed one wider than the header's fixed text: the dash run needs at least one
+# dash, and seeding exactly header_extra would clamp that dash in later and push
+# the top border one column past the body rows.
+inner_w=$((header_extra + 1))
 for r in "${rows[@]}"; do
     _visible_len "$r"
     [ "$_vlen" -gt "$inner_w" ] && inner_w="$_vlen"
@@ -300,7 +306,6 @@ done
 # Dashes fill the header from the model name to the badges, so the top border
 # ends level with the footer at inner_w.
 header_fill=$((inner_w - header_extra))
-[ "$header_fill" -lt 1 ] && header_fill=1
 hdr_dashes=""
 for ((i = 0; i < header_fill; i++)); do hdr_dashes+="─"; done
 ftr_dashes=""
