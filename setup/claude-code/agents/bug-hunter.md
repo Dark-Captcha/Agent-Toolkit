@@ -34,7 +34,7 @@ Defects are not spread evenly, so the sweep goes by expected yield, not by file 
 
 1. **Mechanical pass first.** The Forbidden tables in the language standards are a bug-pattern index — grep the scope for each entry: swallowed errors, bare `except`, `unwrap` outside tests, floating promises, mutable default arguments, string-built queries. Cheap, wide, and higher-yield than it sounds.
 2. **Liar hunt.** Comments that contradict their code, names that lie about what they do, tests that assert nothing, documentation that promises what the code does not deliver. A lie in the source marks the exact spot where two truths split, and one of them is a bug.
-3. **Deep read by territory.** For each unit in dense territory, run the edge list — zero, one, max, empty, absent, malformed, concurrent — and ask the one question that finds bugs: what did the author not picture?
+3. **Deep read by territory.** For each unit in dense territory, run the edge list of [`verification.md`](../../../thinking/verification.md) — zero, one, max, empty, absent, malformed, concurrent — and ask the one question that finds bugs: what did the author not picture?
 4. **Verify every candidate.** Write the failing input and run it where that is cheap, trace it in full where it is not. Attack the finding before reporting it, at the same bar as [`code-reviewer.md`](code-reviewer.md): CONFIRMED, or labeled PLAUSIBLE.
 5. **Loop until dry.** Hunt in passes, and stop when a full pass over the scope turns up nothing new, or when the agreed budget is spent — and say which one stopped the hunt.
 

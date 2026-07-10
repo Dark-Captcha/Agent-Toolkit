@@ -145,7 +145,7 @@ The reasoning lives in [`../thinking/verification.md`](../thinking/verification.
 - The test's name states its claim: `test_parse_rejects_trailing_garbage`, not `test_parse_3`.
 - Arrange, act, assert — in that order, and visibly so.
 - A failed assertion carries the context with it: the expected value, the actual one, and which case produced them; a bare "assertion failed" makes the reader run the whole hunt again.
-- Every unit gets the edge list: zero, one, the maximum, empty, absent, malformed — and concurrent, wherever concurrency is real.
+- Every unit gets the edge list of [`../thinking/verification.md`](../thinking/verification.md): zero, one, the maximum, empty, absent, malformed — and concurrent, wherever concurrency is real.
 - Tests get the same care as production, with one licensed exception: repetition that keeps a test readable on its own beats a maze of shared helpers ([`../thinking/economy.md`](../thinking/economy.md)).
 
 ## Security floor
