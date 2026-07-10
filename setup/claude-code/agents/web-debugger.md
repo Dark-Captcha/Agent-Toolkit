@@ -20,7 +20,7 @@ It gives back the plaintext that artifact was sealed from: its structure, its fi
 
 1. **Attach and trigger.** Point the debugger at the real page and set the flow in motion (`navigate`, then `click`/`type_text`). The fork presents as ordinary Chrome, so `navigator.webdriver` checks and headless probes see nothing — most anti-automation never fires.
 2. **Request, then initiator.** `list_requests` to find the sealed request; `get_initiator` for the exact JS call stack that sent it. That stack _is_ the map to the building code — no guessing which script, no grep. For a POST, `get_request_body` returns the exact bytes it sent — the sealed artifact itself, captured whole.
-3. **Breakpoint the send, read the whole stack.** `set_breakpoint` at the initiator's top frame, re-trigger, and `get_stack` — including the async chain past every `await`/promise, back to the framework that scheduled it. The seal happened somewhere on this stack.
+3. **Breakpoint the send, read the whole stack.** `set_breakpoint` at the initiator's top frame, re-trigger, and `get_stack` — including the async chain past every `await`/promise, back to the framework that scheduled it. The seal happened somewhere on this stack. When the builder is an `eval`'d or `new Function` script with no URL, `set_breakpoint` by its `script_id` (from `list_scripts`/`search_scripts`) — the one way to stop inside code a URL breakpoint can never name.
 4. **Read values, not code.** `get_scopes` + `inspect` walk the live scope chain: `inspect` follows a dotted `path`, invokes getters (`MessageEvent.data`), and surfaces a function's `[[FunctionLocation]]`/`[[Scopes]]` — the location to breakpoint the builder, and the closure that holds its inputs.
 5. **Step into the sealer for its real argument.** Re-evaluating `seal({...})` on the paused frame is a **reconstruction** — a guess that reads the same scope, right up until one field has a side effect or you transcribe the logic wrong. Instead `step` _into_ the encrypt/hash/serialize call and read its first parameter. That is the plaintext, **captured**, not inferred.
 6. **When the frame is unreachable, read the heap.** A VM or polymorphic function has no readable frame — but the object it built is a plain record in memory. `heap_snapshot` while paused, then `find_objects` by the property names you expect (`pow_msg`, `passtime`, `device_id`). The object outlives its obfuscation.
@@ -39,9 +39,9 @@ A page that floods `debugger;`, times the pause, or reloads on detection is _esc
 Match the tool to how the code hides, not to how scary it looks:
 
 - **Minified / renamed** — read the builder's source straight off the live function value (`inspect(fn)`), then breakpoint the seal call.
-- **Control-flow-flattened / VM (`switch($_DS()[x][y])`)** — the source is a bytecode interpreter, useless to read; step-into still reaches the real argument, and `find_objects` reads the built object regardless.
+- **Control-flow-flattened / VM (`switch($_DS()[x][y])`)** — the source is a bytecode interpreter, useless to read; step-into still reaches the real argument, `set_breakpoint` by `script_id` lands inside the `eval`'d interpreter a URL cannot name, and `find_objects` reads the built object regardless.
 - **WebAssembly** — the frame is wasm, but its inputs and outputs cross into JS as plain values; read them at the boundary.
-- **Split across a Worker** — the seal often runs in a dedicated worker; `list_targets` then `use_target` to step into it as its own session.
+- **Split across a Worker** — the seal often runs in a dedicated worker; `list_targets` then `use_target` to step into it as its own session. When the worker seals at _startup_, before a breakpoint can be set, `set_startup_pause` first so a new worker attaches held; `use_target` into it and `set_breakpoint`, then `resume_target` to let it run into the breakpoint.
 
 ## Limits
 
